@@ -1,0 +1,13 @@
+Scripts.execStorage("TestClass.tjs");
+var err = 'no error';
+
+try {
+  Scripts.execStorage("arrow.tjs");
+} catch (e) {
+  if (e) {
+    err = e.message;
+  } else {
+    err = 'UNKNOWN ERROR';
+  }
+}
+Debug.message(err);
