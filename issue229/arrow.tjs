@@ -1,0 +1,111 @@
+(new TestArrow()).run();
+
+class TestArrow extends Test {
+  
+  var name = 'ARROW';
+  var tests = [
+    'test_void_statement',
+    'test_void_expr',
+    'test_null_expr',
+    'test_identity',
+    'test_expr',
+    'test_statement',
+    'test_deep',
+    'test_new',
+    'test_args',
+    'test_context'
+  ];
+  
+  function test_void_statement {
+    var f1 = -> x { };
+    var f2 = -> { };
+    var f3 = -> x { x * 2; };
+    assert_equal(f1(), void, 'expr void');
+    assert_equal(f2(), void, 'stmt void 1');
+    assert_equal(f3(), void, 'stmt void 2');
+  }
+  
+  function test_void_expr {
+    var fn = -> [];
+    assert_equal(fn(), void);
+  }
+  
+  function test_null_expr {
+    var fn = -> [ null ];
+    assert_equal(fn(), null);
+  }
+  
+  function test_identity {
+    var fn = -> x [ x ];
+    var gn = -> x { return x; };
+    assert_equal(fn(10), 10, 'expr identity');
+    assert_equal(gn(10), 10, 'stmt identity');
+  }
+  
+  function test_expr {
+    var f1 = -> x [ x * 2 ];
+    var f2 = -> x [ x * 2 + 3 * (5 - x) ];
+    assert_equal(f1(10), 20, 'twice');
+    assert_equal(f2(10), 5, 'long');
+  }
+  
+  function test_statement {
+    var f1 = -> x { return x * 2; };
+    var f2 = -> x { return x * 2 + 3 * (5 - x); };
+    assert_equal(f1(10), 20, 'twice');
+    assert_equal(f2(10), 5, 'long');
+  }
+  
+  function test_deep {
+    var f1 = -> x { return x + 1; };
+    var f2 = -> x { return f1(x); } incontextof %[f1:f1];
+    assert_equal(f2(10), 11, 'stmt');
+    var f3 = -> x [ x + 1 ];
+    var f4 = -> x [ f3(x) ] incontextof %[f3:f3];
+    assert_equal(f4(10), 11, 'expr');
+  }
+  
+  function test_new {
+    var f1 = -> { return new TestArrow(); };
+    var f2 = -> { return TestArrow(); };
+    var f3 = -> [ new TestArrow() ];
+    var f4 = -> [ TestArrow() ];
+    assert_equal(typeof f1(), 'Object', 'stmt 1');
+    assert_equal(typeof f2(), 'void',   'stmt 2');
+    assert_equal(typeof f3(), 'Object', 'expr 1');
+    assert_equal(typeof f4(), 'void',   'expr 2');
+  }
+  
+  function test_args {
+    var f1 = -> (x, y) [ x * y ];
+    assert_equal(f1(10, 20), 200, 'multiple arguments');
+    
+    var f2 = -> (x, args*) { var t = 0; for (var i = 0; i < args.count; ++i) t += args[i]; return x * t; };
+    assert_equal(f2(10, 1, 2, 3, 4, 5, 6, 7, 8, 9),    450, 'array argument 1');
+    assert_equal(f2(10, [1, 2, 3, 4, 5, 6, 7, 8, 9]*), 450, 'array argument 2');
+    
+    var f3 = -> (ary*) { var t = 0; for (var i = 0; i < ary.count; ++i) t += ary[i]; return t; };
+    var f4 = -> (x, *) [ x * f3(*) ] incontextof %[f3:f3];
+    assert_equal(f4(10, 1, 2, 3, 4, 5, 6, 7, 8, 9),    450, 'array argument 3');
+    
+    var f5 = -> (x, y = 10) [ x * y ];
+    assert_equal(f5(5), 50, 'default argument');
+    
+    var f6 = -> (a : int, b : int = 10) : int [ a * b ];
+    assert_equal(f6(8), 80, 'type annotation');
+    
+    var f7 = -> (a, *) [ a * f3(...) ] incontextof %[f3:f3];
+    assert_equal(f7(9, 3, 8, 4), 9 * (9 + 3 + 8 + 4), 'rest arguments');
+  }
+  
+  function test_context {
+    var d1 = %[a:37];
+    var d2 = %[a:39];
+    var f1 = -> [ a = 10 ] incontextof d1;
+    assert_equal(f1(), 10, 'change 1');
+    assert_equal((f1 incontextof d2)(), 10, 'change 2');
+    assert_equal(d1.a, 10, 'context change 1');
+    assert_equal(d2.a, 10, 'context change 2');
+  }
+  
+}
